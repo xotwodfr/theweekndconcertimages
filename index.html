@@ -77,6 +77,9 @@
       position: relative;
       border: 1px solid var(--border);
       transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .thumb-card:hover {
@@ -85,8 +88,7 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    .thumb-card img, 
-    .thumb-card video {
+    .thumb-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -94,14 +96,52 @@
       transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
-    .thumb-card img.loaded,
-    .thumb-card video.loaded {
+    .thumb-card img.loaded {
       opacity: 1;
     }
 
-    .thumb-card:hover img,
-    .thumb-card:hover video {
+    .thumb-card:hover img {
       transform: scale(1.04);
+    }
+
+    /* Video Card Placeholder Styling */
+    .video-card-inner {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+    }
+
+    .play-icon {
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(4px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      transition: background 0.2s, transform 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .thumb-card:hover .play-icon {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.1);
+    }
+
+    .play-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: #fff;
+      margin-left: 2px;
     }
 
     .media-info {
@@ -110,13 +150,12 @@
       left: 0;
       right: 0;
       padding: 10px 12px;
-      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
       color: #fff;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s ease;
     }
@@ -130,12 +169,12 @@
       backdrop-filter: blur(4px);
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    /* Professional Lightbox Modal */
+    /* Lightbox Modal */
     .lightbox {
       position: fixed;
       inset: 0;
@@ -274,7 +313,6 @@
   </div>
 
   <script>
-    // Explicit manifest of all mixed photos and videos based on directory contents
     const mediaItems = [
       { type: 'video', file: 'Abel talking 1 (live).MOV', title: 'Abel talking 1' },
       { type: 'video', file: 'adaptation (live).MOV', title: 'Adaptation' },
@@ -334,10 +372,8 @@
       { type: 'video', file: 'without a warning (live).MOV', title: 'Without A Warning' }
     ];
 
-    // Dynamically append the 182 numbered photos
     for (let i = 1; i <= 182; i++) {
       const num = String(i).padStart(2, '0');
-      // We will let the element error-handler dynamically detect .JPG, .jpg, or .PNG
       mediaItems.push({
         type: 'image',
         baseName: `The_Weeknd_Live_${num}`,
@@ -365,51 +401,49 @@
       const card = document.createElement('div');
       card.className = 'thumb-card';
 
-      const infoOverlay = document.createElement('div');
-      infoOverlay.className = 'media-info';
-      infoOverlay.innerHTML = `<span>${item.title}</span><span class="media-badge">${item.type}</span>`;
-      card.appendChild(infoOverlay);
-
-      let mediaElement;
-
       if (item.type === 'video') {
-        mediaElement = document.createElement('video');
-        mediaElement.src = item.file;
-        mediaElement.muted = true;
-        mediaElement.playsInline = true;
-        mediaElement.preload = 'metadata';
-
-        mediaElement.onloadeddata = () => {
-          mediaElement.classList.add('loaded');
-          resolvedItems[index] = { src: item.file, type: 'video', title: item.title };
-        };
-        
-        card.insertBefore(mediaElement, infoOverlay);
-        gallery.appendChild(card);
+        card.innerHTML = `
+          <div class="video-card-inner">
+            <div class="play-icon">
+              <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"></polygon></svg>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${item.title}</span>
+          </div>
+          <div class="media-info">
+            <span>${item.title}</span>
+            <span class="media-badge">Video</span>
+          </div>
+        `;
+        resolvedItems[index] = { src: item.file, type: 'video', title: item.title };
       } else {
-        mediaElement = document.createElement('img');
-        mediaElement.loading = 'lazy';
+        const img = document.createElement('img');
+        img.loading = 'lazy';
         let extIdx = 0;
 
         const tryExt = () => {
           if (extIdx < extensions.length) {
-            mediaElement.src = `${item.baseName}${extensions[extIdx]}`;
+            img.src = `${item.baseName}${extensions[extIdx]}`;
           }
         };
 
-        mediaElement.onload = () => {
-          mediaElement.classList.add('loaded');
-          resolvedItems[index] = { src: mediaElement.src, type: 'image', title: item.title };
+        img.onload = () => {
+          img.classList.add('loaded');
+          resolvedItems[index] = { src: img.src, type: 'image', title: item.title };
         };
 
-        mediaElement.onerror = () => {
+        img.onerror = () => {
           extIdx++;
           tryExt();
         };
 
         tryExt();
-        card.insertBefore(mediaElement, infoOverlay);
-        gallery.appendChild(card);
+
+        const infoOverlay = document.createElement('div');
+        infoOverlay.className = 'media-info';
+        infoOverlay.innerHTML = `<span>${item.title}</span><span class="media-badge">Photo</span>`;
+
+        card.appendChild(img);
+        card.appendChild(infoOverlay);
       }
 
       card.addEventListener('click', () => {
@@ -417,6 +451,8 @@
           openLightbox(index);
         }
       });
+
+      gallery.appendChild(card);
     });
 
     function openLightbox(index) {
