@@ -85,7 +85,8 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    .thumb-card img {
+    .thumb-card img, 
+    .thumb-card video {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -93,12 +94,45 @@
       transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
-    .thumb-card img.loaded {
+    .thumb-card img.loaded,
+    .thumb-card video.loaded {
       opacity: 1;
     }
 
-    .thumb-card:hover img {
+    .thumb-card:hover img,
+    .thumb-card:hover video {
       transform: scale(1.04);
+    }
+
+    .media-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 12px;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+      color: #fff;
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .thumb-card:hover .media-info {
+      opacity: 1;
+    }
+
+    .media-badge {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(4px);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     /* Professional Lightbox Modal */
@@ -130,13 +164,14 @@
       align-items: center;
     }
 
-    .lightbox img {
+    .lightbox img,
+    .lightbox video {
       max-width: 92vw;
       max-height: 85vh;
       object-fit: contain;
       border-radius: 4px;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
-      user-select: none;
+      outline: none;
     }
 
     .lightbox-nav {
@@ -178,6 +213,15 @@
       font-size: 0.9rem;
     }
 
+    .lightbox-title {
+      color: var(--text);
+      font-weight: 500;
+      max-width: 70vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .lightbox-close {
       background: none;
       border: none;
@@ -206,9 +250,9 @@
   <header>
     <div class="title-group">
       <h1>The Weeknd — Live Concert Archive</h1>
-      <p>High-resolution photography gallery</p>
+      <p>Strawberry Arena Live Performance Gallery</p>
     </div>
-    <div class="badge" id="total-badge">Loading...</div>
+    <div class="badge" id="total-badge">Loading archive...</div>
   </header>
 
   <div class="grid" id="gallery"></div>
@@ -217,75 +261,163 @@
   <div class="lightbox" id="lightbox">
     <div class="lightbox-content-wrap">
       <div class="lightbox-header">
-        <span id="lightbox-counter">1 / 182</span>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          <span id="lightbox-counter">1 / 1</span>
+          <span class="lightbox-title" id="lightbox-title"></span>
+        </div>
         <button class="lightbox-close" id="close-btn">&times;</button>
       </div>
       <button class="lightbox-nav prev" id="prev-btn">&#10094;</button>
-      <img id="lightbox-img" src="" alt="Enlarged concert photo">
+      <div id="lightbox-media-container"></div>
       <button class="lightbox-nav next" id="next-btn">&#10095;</button>
     </div>
   </div>
 
   <script>
-    const totalImages = 182;
+    // Explicit manifest of all mixed photos and videos based on directory contents
+    const mediaItems = [
+      { type: 'video', file: 'Abel talking 1 (live).MOV', title: 'Abel talking 1' },
+      { type: 'video', file: 'adaptation (live).MOV', title: 'Adaptation' },
+      { type: 'video', file: 'adaptation snippet (live).MOV', title: 'Adaptation snippet' },
+      { type: 'video', file: 'after hours (live).MOV', title: 'After Hours' },
+      { type: 'video', file: 'always be my fault (live).MOV', title: 'Always Be My Fault' },
+      { type: 'video', file: 'baptized in fear x open hearts (live).MOV', title: 'Baptized In Fear x Open Hearts' },
+      { type: 'video', file: 'before the concert (live).MOV', title: 'Before the Concert' },
+      { type: 'video', file: 'blinding lights (live).MOV', title: 'Blinding Lights' },
+      { type: 'video', file: 'call out my name (live).MOV', title: 'Call Out My Name' },
+      { type: 'video', file: 'cant feel my face (live).MOV', title: 'Can\'t Feel My Face' },
+      { type: 'video', file: 'carnival (live).MOV', title: 'Carnival' },
+      { type: 'video', file: 'carti unknown 1 (live).MOV', title: 'Carti Unknown 1' },
+      { type: 'video', file: 'carti unknown 2 (live).MOV', title: 'Carti Unknown 2' },
+      { type: 'video', file: 'carti unknown 3 (live).MOV', title: 'Carti Unknown 3' },
+      { type: 'video', file: 'crowd singing one of the girls (live).MOV', title: 'Crowd Singing One Of The Girls' },
+      { type: 'video', file: 'cry for me (live).MOV', title: 'Cry For Me' },
+      { type: 'video', file: 'ending 1 (live).MOV', title: 'Ending 1' },
+      { type: 'video', file: 'ending 2 (live).MOV', title: 'Ending 2' },
+      { type: 'video', file: 'ending 3 (live).MOV', title: 'Ending 3' },
+      { type: 'video', file: 'faith (live).MOV', title: 'Faith' },
+      { type: 'video', file: 'FE!N (live).MOV', title: 'FE!N' },
+      { type: 'video', file: 'heartless (live).MOV', title: 'Heartless' },
+      { type: 'video', file: 'house of balloons (live).MOV', title: 'House of Balloons' },
+      { type: 'video', file: 'how do i make you love me (live).MOV', title: 'How Do I Make You Love Me' },
+      { type: 'video', file: 'i feel it coming (live).MOV', title: 'I Feel It Coming' },
+      { type: 'video', file: 'just screaming (live).MOV', title: 'Just Screaming' },
+      { type: 'video', file: 'less than zero 1 (live).MOV', title: 'Less Than Zero 1' },
+      { type: 'video', file: 'less than zero 2 (live).MOV', title: 'Less Than Zero 2' },
+      { type: 'video', file: 'lost in the fire (live).MOV', title: 'Lost In The Fire' },
+      { type: 'video', file: 'moth to a flame 1 (live).MOV', title: 'Moth To A Flame 1' },
+      { type: 'video', file: 'moth to a flame 2 (live).MOV', title: 'Moth To A Flame 2' },
+      { type: 'video', file: 'moth to a flame 3 (live).MOV', title: 'Moth To A Flame 3' },
+      { type: 'video', file: 'moth to a flame 4 (live).MOV', title: 'Moth To A Flame 4' },
+      { type: 'video', file: 'odd look (live).MOV', title: 'Odd Look' },
+      { type: 'video', file: 'odd look snippet (live).MOV', title: 'Odd Look Snippet' },
+      { type: 'video', file: 'often (live).MOV', title: 'Often' },
+      { type: 'video', file: 'open hearts (live).MOV', title: 'Open Hearts' },
+      { type: 'video', file: 'playboi carti song (terrible quality) (live).MOV', title: 'Playboi Carti Song' },
+      { type: 'video', file: 'prince 85 (live).MOV', title: 'Prince 85' },
+      { type: 'video', file: 'prince 85 song 1 (live).MOV', title: 'Prince 85 Song 1' },
+      { type: 'video', file: 'prince 85 song 2 (live).MOV', title: 'Prince 85 Song 2' },
+      { type: 'video', file: 'prince 85 song 3 (12-12) (live).MOV', title: 'Prince 85 Song 3' },
+      { type: 'video', file: 'prince 85 song 4 (12-12) (live).MOV', title: 'Prince 85 Song 4' },
+      { type: 'video', file: 'prince 85 song 5 (live).MOV', title: 'Prince 85 Song 5' },
+      { type: 'video', file: 'professional x save your tears (live).MOV', title: 'Professional x Save Your Tears' },
+      { type: 'video', file: 'sao paulo (live).MOV', title: 'São Paulo' },
+      { type: 'video', file: 'sky (live).MOV', title: 'Sky' },
+      { type: 'video', file: 'starboy (live).MOV', title: 'Starboy' },
+      { type: 'video', file: 'stargirl interlude (live).MOV', title: 'Stargirl Interlude' },
+      { type: 'video', file: 'the abyss (live).MOV', title: 'The Abyss' },
+      { type: 'video', file: 'timeless (live).MOV', title: 'Timeless' },
+      { type: 'video', file: 'type shit (live).MOV', title: 'Type Shit' },
+      { type: 'video', file: 'unknown 1 (don toliver and future?) (live).MOV', title: 'Unknown Track 1' },
+      { type: 'video', file: 'unknown 2 (don toliver and future?) (live).MOV', title: 'Unknown Track 2' },
+      { type: 'video', file: 'wake me up x after hours (live).MOV', title: 'Wake Me Up x After Hours' },
+      { type: 'video', file: 'without a warning (live).MOV', title: 'Without A Warning' }
+    ];
+
+    // Dynamically append the 182 numbered photos
+    for (let i = 1; i <= 182; i++) {
+      const num = String(i).padStart(2, '0');
+      // We will let the element error-handler dynamically detect .JPG, .jpg, or .PNG
+      mediaItems.push({
+        type: 'image',
+        baseName: `The_Weeknd_Live_${num}`,
+        title: `Concert Photo ${i}`
+      });
+    }
+
     const gallery = document.getElementById('gallery');
     const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
+    const mediaContainer = document.getElementById('lightbox-media-container');
     const closeBtn = document.getElementById('close-btn');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
     const totalBadge = document.getElementById('total-badge');
     const lightboxCounter = document.getElementById('lightbox-counter');
+    const lightboxTitle = document.getElementById('lightbox-title');
 
     let currentIndex = 0;
-    const resolvedImagePaths = new Array(totalImages);
+    const resolvedItems = new Array(mediaItems.length);
     const extensions = ['.JPG', '.jpg', '.PNG', '.png'];
 
-    // Generate grid and robustly resolve image file extensions
-    for (let i = 1; i <= totalImages; i++) {
-      const num = String(i).padStart(2, '0');
-      const baseName = `The_Weeknd_Live_${num}`;
-      
+    totalBadge.textContent = `${mediaItems.length} Items`;
+
+    mediaItems.forEach((item, index) => {
       const card = document.createElement('div');
       card.className = 'thumb-card';
-      
-      const img = document.createElement('img');
-      img.alt = `Concert Photo ${i}`;
-      img.loading = 'lazy';
 
-      let extIndex = 0;
+      const infoOverlay = document.createElement('div');
+      infoOverlay.className = 'media-info';
+      infoOverlay.innerHTML = `<span>${item.title}</span><span class="media-badge">${item.type}</span>`;
+      card.appendChild(infoOverlay);
 
-      // Smart fallback loader to test file extensions sequentially
-      const tryLoadExtension = () => {
-        if (extIndex < extensions.length) {
-          img.src = `${baseName}${extensions[extIndex]}`;
-        }
-      };
+      let mediaElement;
 
-      img.onload = () => {
-        img.classList.add('loaded');
-        // Cache the successfully verified path for lightbox viewing
-        resolvedImagePaths[i - 1] = img.src;
-      };
+      if (item.type === 'video') {
+        mediaElement = document.createElement('video');
+        mediaElement.src = item.file;
+        mediaElement.muted = true;
+        mediaElement.playsInline = true;
+        mediaElement.preload = 'metadata';
 
-      img.onerror = () => {
-        extIndex++;
-        tryLoadExtension();
-      };
+        mediaElement.onloadeddata = () => {
+          mediaElement.classList.add('loaded');
+          resolvedItems[index] = { src: item.file, type: 'video', title: item.title };
+        };
+        
+        card.insertBefore(mediaElement, infoOverlay);
+        gallery.appendChild(card);
+      } else {
+        mediaElement = document.createElement('img');
+        mediaElement.loading = 'lazy';
+        let extIdx = 0;
 
-      tryLoadExtension();
+        const tryExt = () => {
+          if (extIdx < extensions.length) {
+            mediaElement.src = `${item.baseName}${extensions[extIdx]}`;
+          }
+        };
+
+        mediaElement.onload = () => {
+          mediaElement.classList.add('loaded');
+          resolvedItems[index] = { src: mediaElement.src, type: 'image', title: item.title };
+        };
+
+        mediaElement.onerror = () => {
+          extIdx++;
+          tryExt();
+        };
+
+        tryExt();
+        card.insertBefore(mediaElement, infoOverlay);
+        gallery.appendChild(card);
+      }
 
       card.addEventListener('click', () => {
-        if (resolvedImagePaths[i - 1]) {
-          openLightbox(i - 1);
+        if (resolvedItems[index]) {
+          openLightbox(index);
         }
       });
-
-      card.appendChild(img);
-      gallery.appendChild(card);
-    }
-
-    totalBadge.textContent = `${totalImages} Photos`;
+    });
 
     function openLightbox(index) {
       currentIndex = index;
@@ -296,21 +428,38 @@
 
     function closeLightbox() {
       lightbox.classList.remove('active');
+      mediaContainer.innerHTML = '';
       document.body.style.overflow = '';
     }
 
     function updateLightbox() {
-      lightboxImg.src = resolvedImagePaths[currentIndex];
-      lightboxCounter.textContent = `${currentIndex + 1} / ${totalImages}`;
+      mediaContainer.innerHTML = '';
+      const current = resolvedItems[currentIndex];
+      
+      if (current.type === 'video') {
+        const vid = document.createElement('video');
+        vid.src = current.src;
+        vid.controls = true;
+        vid.autoplay = true;
+        mediaContainer.appendChild(vid);
+      } else {
+        const img = document.createElement('img');
+        img.src = current.src;
+        img.alt = current.title;
+        mediaContainer.appendChild(img);
+      }
+
+      lightboxCounter.textContent = `${currentIndex + 1} / ${mediaItems.length}`;
+      lightboxTitle.textContent = current.title;
     }
 
     function showPrev() {
-      currentIndex = (currentIndex - 1 + totalImages) % totalImages;
+      currentIndex = (currentIndex - 1 + mediaItems.length) % mediaItems.length;
       updateLightbox();
     }
 
     function showNext() {
-      currentIndex = (currentIndex + 1) % totalImages;
+      currentIndex = (currentIndex + 1) % mediaItems.length;
       updateLightbox();
     }
 
