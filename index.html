@@ -1,32 +1,333 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/png" href="./favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Weeknd - Live Concert</title>
+  <title>The Weeknd - Live Concert Archive</title>
+  <link rel="icon" type="image/png" href="./favicon.png">
   <style>
-    body { background: #111; color: #fff; margin: 0; padding: 20px; font-family: system-ui; }
-    h1 { text-align: center; font-weight: 400; margin-bottom: 24px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
-    img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; }
+    :root {
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-hover: #27272a;
+      --text: #f4f4f5;
+      --text-dim: #71717a;
+      --accent: #fafafa;
+      --border: #27272a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 24px;
+    }
+
+    header {
+      max-width: 1600px;
+      margin: 0 auto 36px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+
+    .title-group h1 {
+      font-size: 1.75rem;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+      margin: 0 0 6px 0;
+    }
+
+    .title-group p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .badge {
+      background: var(--surface);
+      color: var(--text-dim);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+    }
+
+    .grid {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .thumb-card {
+      aspect-ratio: 3 / 2;
+      background: var(--surface);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid var(--border);
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .thumb-card:hover {
+      transform: translateY(-2px);
+      border-color: #52525b;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .thumb-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .thumb-card img.loaded {
+      opacity: 1;
+    }
+
+    .thumb-card:hover img {
+      transform: scale(1.04);
+    }
+
+    /* Professional Lightbox Modal */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .lightbox.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .lightbox-content-wrap {
+      position: relative;
+      max-width: 92vw;
+      max-height: 90vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .lightbox img {
+      max-width: 92vw;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      user-select: none;
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(24, 24, 27, 0.8);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 1.25rem;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: background 0.2s, transform 0.2s;
+      z-index: 10;
+    }
+
+    .lightbox-nav:hover {
+      background: rgba(39, 39, 42, 0.95);
+      transform: translateY(-50%) scale(1.05);
+    }
+
+    .prev { left: -75px; }
+    .next { right: -75px; }
+
+    .lightbox-header {
+      position: absolute;
+      top: -50px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .lightbox-close {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.75rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .lightbox-close:hover {
+      color: #fff;
+    }
+
+    @media (max-width: 768px) {
+      .prev { left: 10px; }
+      .next { right: 10px; }
+      .lightbox-nav { width: 40px; height: 40px; font-size: 1rem; }
+      body { padding: 20px 12px; }
+    }
   </style>
 </head>
 <body>
-  <h1>The Weeknd - Live Concert</h1>
+
+  <header>
+    <div class="title-group">
+      <h1>The Weeknd — Live Concert Archive</h1>
+      <p>High-resolution photography gallery</p>
+    </div>
+    <div class="badge" id="total-badge">Loading...</div>
+  </header>
+
   <div class="grid" id="gallery"></div>
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox" id="lightbox">
+    <div class="lightbox-content-wrap">
+      <div class="lightbox-header">
+        <span id="lightbox-counter">1 / 182</span>
+        <button class="lightbox-close" id="close-btn">&times;</button>
+      </div>
+      <button class="lightbox-nav prev" id="prev-btn">&#10094;</button>
+      <img id="lightbox-img" src="" alt="Enlarged concert photo">
+      <button class="lightbox-nav next" id="next-btn">&#10095;</button>
+    </div>
+  </div>
+
   <script>
-    const gallery = document.getElementById("gallery");
-    for (let i = 1; i <= 182; i++) {
-      const num = String(i).padStart(2, "0");
-      const img = document.createElement("img");
-      img.src = `./The_Weeknd_Live_${num}.JPG`;
-      img.onerror = () => {
-        img.src = `./The_Weeknd_Live_${num}.jpg`;
-        img.onerror = () => img.src = `./The_Weeknd_Live_${num}.PNG`;
+    const totalImages = 182;
+    const gallery = document.getElementById('gallery');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const closeBtn = document.getElementById('close-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const totalBadge = document.getElementById('total-badge');
+    const lightboxCounter = document.getElementById('lightbox-counter');
+
+    let currentIndex = 0;
+    const resolvedImagePaths = new Array(totalImages);
+    const extensions = ['.JPG', '.jpg', '.PNG', '.png'];
+
+    // Generate grid and robustly resolve image file extensions
+    for (let i = 1; i <= totalImages; i++) {
+      const num = String(i).padStart(2, '0');
+      const baseName = `The_Weeknd_Live_${num}`;
+      
+      const card = document.createElement('div');
+      card.className = 'thumb-card';
+      
+      const img = document.createElement('img');
+      img.alt = `Concert Photo ${i}`;
+      img.loading = 'lazy';
+
+      let extIndex = 0;
+
+      // Smart fallback loader to test file extensions sequentially
+      const tryLoadExtension = () => {
+        if (extIndex < extensions.length) {
+          img.src = `${baseName}${extensions[extIndex]}`;
+        }
       };
-      gallery.appendChild(img);
+
+      img.onload = () => {
+        img.classList.add('loaded');
+        // Cache the successfully verified path for lightbox viewing
+        resolvedImagePaths[i - 1] = img.src;
+      };
+
+      img.onerror = () => {
+        extIndex++;
+        tryLoadExtension();
+      };
+
+      tryLoadExtension();
+
+      card.addEventListener('click', () => {
+        if (resolvedImagePaths[i - 1]) {
+          openLightbox(i - 1);
+        }
+      });
+
+      card.appendChild(img);
+      gallery.appendChild(card);
     }
+
+    totalBadge.textContent = `${totalImages} Photos`;
+
+    function openLightbox(index) {
+      currentIndex = index;
+      updateLightbox();
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function updateLightbox() {
+      lightboxImg.src = resolvedImagePaths[currentIndex];
+      lightboxCounter.textContent = `${currentIndex + 1} / ${totalImages}`;
+    }
+
+    function showPrev() {
+      currentIndex = (currentIndex - 1 + totalImages) % totalImages;
+      updateLightbox();
+    }
+
+    function showNext() {
+      currentIndex = (currentIndex + 1) % totalImages;
+      updateLightbox();
+    }
+
+    closeBtn.addEventListener('click', closeLightbox);
+    prevBtn.addEventListener('click', showPrev);
+    nextBtn.addEventListener('click', showNext);
+
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!lightbox.classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') showPrev();
+      if (e.key === 'ArrowRight') showNext();
+    });
   </script>
 </body>
 </html>
