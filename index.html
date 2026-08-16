@@ -104,7 +104,6 @@
       transform: scale(1.04);
     }
 
-    /* Video Card Placeholder Styling */
     .video-card-inner {
       width: 100%;
       height: 100%;
@@ -174,7 +173,6 @@
       letter-spacing: 0.05em;
     }
 
-    /* Lightbox Modal */
     .lightbox {
       position: fixed;
       inset: 0;
@@ -296,7 +294,6 @@
 
   <div class="grid" id="gallery"></div>
 
-  <!-- Lightbox Modal -->
   <div class="lightbox" id="lightbox">
     <div class="lightbox-content-wrap">
       <div class="lightbox-header">
@@ -414,7 +411,7 @@
             <span class="media-badge">Video</span>
           </div>
         `;
-        resolvedItems[index] = { src: item.file, type: 'video', title: item.title };
+        resolvedItems[index] = { src: encodeURI(item.file), type: 'video', title: item.title };
       } else {
         const img = document.createElement('img');
         img.loading = 'lazy';
@@ -474,9 +471,22 @@
       
       if (current.type === 'video') {
         const vid = document.createElement('video');
-        vid.src = current.src;
         vid.controls = true;
         vid.autoplay = true;
+        vid.playsInline = true;
+        vid.preload = 'auto';
+
+        const sourceMp4 = document.createElement('source');
+        sourceMp4.src = current.src;
+        sourceMp4.type = 'video/mp4';
+
+        const sourceQuicktime = document.createElement('source');
+        sourceQuicktime.src = current.src;
+        sourceQuicktime.type = 'video/quicktime';
+
+        vid.appendChild(sourceMp4);
+        vid.appendChild(sourceQuicktime);
+
         mediaContainer.appendChild(vid);
       } else {
         const img = document.createElement('img');
